@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
@@ -23,6 +24,11 @@ public class PlaidLinkToken {
         LinkTokenCreateRequestUser user = new LinkTokenCreateRequestUser()
                 .clientUserId(UUID.randomUUID().toString());
 
+        LinkTokenCreateRequestStatements statements =  new LinkTokenCreateRequestStatements()
+                .startDate(LocalDate.now().minusMonths(4))
+                .endDate(LocalDate.now());
+
+
         DepositoryFilter depository = new DepositoryFilter()
                 .accountSubtypes(Arrays.asList(
                         DepositoryAccountSubtype.CHECKING,
@@ -35,11 +41,13 @@ public class PlaidLinkToken {
         LinkTokenCreateRequest request = new LinkTokenCreateRequest()
                 .user(user)
                 .clientName("Personal Finance App")
-                .products(Collections.singletonList(Products.AUTH))
+                .products(Collections.singletonList(Products.STATEMENTS))
+                .statements(statements)
                 .countryCodes(Collections.singletonList(CountryCode.US))
                 .language("en")
                 .accountFilters(accountFilters)
-                .hostedLink(new LinkTokenCreateHostedLink());
+                .hostedLink(new LinkTokenCreateHostedLink())
+                .webhook("https://transmaterial-frederic-nonbeatific.ngrok-free.dev/plaid/webhook");
 
         Response<LinkTokenCreateResponse> response = plaidApi.linkTokenCreate(request).execute();
 
