@@ -7,6 +7,7 @@ import com.plaid.client.model.LinkTokenCreateResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -37,6 +38,7 @@ public class PlaidController {
                     .body("Failed to create Plaid link token: " + e.getMessage());
         }
     }
+
 
 }
 
