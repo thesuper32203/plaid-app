@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/plaid_app_db
     username: postgres              # replace with your actual DB username
-    password: your_password_here    # replace with your actual DB password
+    password: ${POSTGRESQL_PASSWORD}   # replace with your actual DB password
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -22,4 +22,4 @@ plaid:
   client-id: ${PLAID_CLIENT_ID}
   secret: ${PLAID_SECRET}
   env: sandbox                      # or 'development' / 'production'
-  webhook-url: https://yourdomain.com/webhook
+  # webhook-url: https://yourdomain.com/webhook
