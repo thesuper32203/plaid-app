@@ -11,5 +11,19 @@ import java.util.HashMap;
 @Service
 public class PlaidService {
 
+    private final PlaidApi plaidApi;
 
+    public PlaidService(PlaidConfig config){
+
+        HashMap<String,String> apiKeys = new HashMap<String,String>();
+        apiKeys.put("clientId", config.getClientId());
+        apiKeys.put("secret", config.getSecret());
+        ApiClient apiClient = new ApiClient(apiKeys);
+        apiClient.setPlaidAdapter(ApiClient.Sandbox);
+
+        plaidApi = apiClient.createService(PlaidApi.class);
+
+    }
+
+    public PlaidApi getPlaidApi(){return plaidApi;}
 }
