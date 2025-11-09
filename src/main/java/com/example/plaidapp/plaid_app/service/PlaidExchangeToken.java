@@ -38,6 +38,7 @@ public class PlaidExchangeToken {
             if (!plaidItemRepository.existsByItemIdAndUserId(itemId, userId)) {
                 plaidItemRepository.save(item);
             }
+            System.out.printf("✅ Exchanged public token for item %s (user %s)%n", itemId, userId);
             return item;
         } catch (Exception e) {
             throw new RuntimeException("Failed to exchange public token", e);

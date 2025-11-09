@@ -44,9 +44,8 @@ public class PlaidWebhookController {
 
                 //TODO: get the userId from plaid link
                 String userId = (String) payload.get("link_session_id");
-                PlaidItem savedItem = plaidExchangeToken.exchangeToken(publicToken, userId);
 
-                plaidStatementService.downloadAllStatements(savedItem.getItemId());
+                plaidStatementService.uploadStatements(plaidExchangeToken.exchangeToken(publicToken, userId));
 
 
             }

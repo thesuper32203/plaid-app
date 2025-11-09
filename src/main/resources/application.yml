@@ -23,3 +23,10 @@ plaid:
   secret: ${PLAID_SECRET}
   env: sandbox                      # or 'development' / 'production'
   # webhook-url: https://yourdomain.com/webhook
+
+aws:
+  access-key: ${S3_KEY}
+  secret-key: ${S3_SECRET}
+  region: us-east-2
+  s3:
+    bucket: plaid-bank-statements
