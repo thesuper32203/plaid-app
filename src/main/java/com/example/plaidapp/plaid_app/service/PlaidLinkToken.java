@@ -25,7 +25,7 @@ public class PlaidLinkToken {
                 .clientUserId(UUID.randomUUID().toString());
 
         LinkTokenCreateRequestStatements statements =  new LinkTokenCreateRequestStatements()
-                .startDate(LocalDate.now().minusMonths(4))
+                .startDate(LocalDate.now().minusMonths(5))
                 .endDate(LocalDate.now());
 
 

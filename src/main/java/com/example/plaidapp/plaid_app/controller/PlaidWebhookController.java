@@ -1,7 +1,11 @@
 package com.example.plaidapp.plaid_app.controller;
 
 
+import com.example.plaidapp.plaid_app.model.PlaidItem;
+import com.example.plaidapp.plaid_app.repository.PlaidItemRepository;
 import com.example.plaidapp.plaid_app.service.PlaidExchangeToken;
+import com.example.plaidapp.plaid_app.service.PlaidStatementService;
+import com.plaid.client.model.StatementsAccount;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -16,9 +21,13 @@ import java.util.Map;
 public class PlaidWebhookController {
 
     private final PlaidExchangeToken plaidExchangeToken;
+    private final PlaidItemRepository plaidItemRepository;
+    private final PlaidStatementService plaidStatementService;
 
-    public PlaidWebhookController(PlaidExchangeToken plaidExchangeToken) {
+    public PlaidWebhookController(PlaidExchangeToken plaidExchangeToken, PlaidItemRepository plaidItemRepository, PlaidStatementService plaidStatementService) {
         this.plaidExchangeToken = plaidExchangeToken;
+        this.plaidItemRepository = plaidItemRepository;
+        this.plaidStatementService = plaidStatementService;
     }
 
     @PostMapping
@@ -35,7 +44,10 @@ public class PlaidWebhookController {
 
                 //TODO: get the userId from plaid link
                 String userId = (String) payload.get("link_session_id");
-                plaidExchangeToken.exchangeToken(publicToken, userId);
+                PlaidItem savedItem = plaidExchangeToken.exchangeToken(publicToken, userId);
+
+                List<StatementsAccount> accounts = plaidStatementService.getTransactions(savedItem.getItemId());
+                System.out.println(accounts.getFirst().getStatements());
 
             }
             return ResponseEntity.ok("Webhook processed successfully");

@@ -18,7 +18,7 @@ public class PlaidExchangeToken {
         this.plaidItemRepository = plaidItemRepository;
     }
 
-    public void exchangeToken(String publicToken, String userId) {
+    public PlaidItem exchangeToken(String publicToken, String userId) {
         try{
             ItemPublicTokenExchangeRequest request = new ItemPublicTokenExchangeRequest()
                     .publicToken(publicToken);
@@ -38,9 +38,9 @@ public class PlaidExchangeToken {
             if (!plaidItemRepository.existsByItemIdAndUserId(itemId, userId)) {
                 plaidItemRepository.save(item);
             }
-
+            return item;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to exchange public token", e);
         }
 
 
