@@ -36,6 +36,7 @@ public class PlaidWebhookController {
                 //TODO: get the userId from plaid link
                 String userId = (String) payload.get("link_session_id");
                 plaidExchangeToken.exchangeToken(publicToken, userId);
+
             }
             return ResponseEntity.ok("Webhook processed successfully");
 
