@@ -46,8 +46,8 @@ public class PlaidWebhookController {
                 String userId = (String) payload.get("link_session_id");
                 PlaidItem savedItem = plaidExchangeToken.exchangeToken(publicToken, userId);
 
-                List<StatementsAccount> accounts = plaidStatementService.getTransactions(savedItem.getItemId());
-                System.out.println(accounts.getFirst().getStatements());
+                plaidStatementService.downloadAllStatements(savedItem.getItemId());
+
 
             }
             return ResponseEntity.ok("Webhook processed successfully");
