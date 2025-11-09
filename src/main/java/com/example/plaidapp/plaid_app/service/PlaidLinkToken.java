@@ -1,5 +1,7 @@
 package com.example.plaidapp.plaid_app.service;
 
+import com.example.plaidapp.plaid_app.model.PlaidItem;
+import com.example.plaidapp.plaid_app.repository.PlaidItemRepository;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import org.springframework.stereotype.Service;
@@ -15,19 +17,25 @@ import java.util.UUID;
 public class PlaidLinkToken {
 
     private final PlaidApi plaidApi;
+    private final PlaidItemRepository plaidItemRepository;
 
-    public PlaidLinkToken(PlaidService plaidService) {
+    public PlaidLinkToken(PlaidService plaidService, PlaidItemRepository PlaidItemRepository ) {
         this.plaidApi = plaidService.getPlaidApi();
+        this.plaidItemRepository = PlaidItemRepository;
     }
 
-    public LinkTokenCreateResponse createLinkToken() throws IOException {
+    public LinkTokenCreateResponse createLinkToken(String repId) throws IOException {
+
+        // Generate unique userId for this session
+        String userId = UUID.randomUUID().toString();
+        String clientUserId = repId + ":" + userId;
+
         LinkTokenCreateRequestUser user = new LinkTokenCreateRequestUser()
-                .clientUserId(UUID.randomUUID().toString());
+                .clientUserId(clientUserId);
 
         LinkTokenCreateRequestStatements statements =  new LinkTokenCreateRequestStatements()
                 .startDate(LocalDate.now().minusMonths(4))
                 .endDate(LocalDate.now());
-
 
         DepositoryFilter depository = new DepositoryFilter()
                 .accountSubtypes(Arrays.asList(
@@ -56,6 +64,17 @@ public class PlaidLinkToken {
             throw new IOException("Plaid API error: " + error);
         }
 
-        return response.body();
+        LinkTokenCreateResponse linkResponse = response.body();
+
+        PlaidItem plaidItem = new PlaidItem().builder()
+                .linkToken(linkResponse.getLinkToken())
+                .repId(repId)
+                .userId(userId)
+                .build();
+
+        plaidItemRepository.save(plaidItem);
+        System.out.printf("✅ Created link session for rep %s with userId %s%n", repId, userId);
+
+        return linkResponse;
     }
 }

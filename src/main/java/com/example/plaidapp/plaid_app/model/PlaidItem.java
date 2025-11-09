@@ -11,11 +11,10 @@ import lombok.*;
 public class PlaidItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String linkToken;
 
     private String itemId;
     private String accessToken;
     private String userId;
-
+    private String repId;
 }

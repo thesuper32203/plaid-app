@@ -34,19 +34,25 @@ public class PlaidWebhookController {
     public ResponseEntity<?> handleWebhook(@RequestBody Map<String, Object> payload) {
         try{
 
-
             String webhookType = (String) payload.get("webhook_type");
             String webhookCode = (String) payload.get("webhook_code");
 
             if ("LINK".equalsIgnoreCase(webhookType) &&
-                    ("ITEM_ADD_RESULT".equalsIgnoreCase(webhookCode) || "SESSION_FINISHED".equalsIgnoreCase(webhookCode))) {
+                    ("ITEM_ADD_RESULT".equalsIgnoreCase(webhookCode) ||
+                            "SESSION_FINISHED".equalsIgnoreCase(webhookCode))) {
+
+
                 String publicToken = (String) payload.get("public_token");
+                String linkToken = (String) payload.get("link_token");
 
-                //TODO: get the userId from plaid link
-                String userId = (String) payload.get("link_session_id");
+                System.out.println("linktoken: " + linkToken);
 
-                plaidStatementService.uploadStatements(plaidExchangeToken.exchangeToken(publicToken, userId));
+                if (publicToken == null) {
+                    return ResponseEntity.badRequest().body("Missing public_token in webhook");
+                }
 
+                PlaidItem item = plaidExchangeToken.exchangeToken(publicToken, linkToken);
+                plaidStatementService.uploadStatements(item);
 
             }
             return ResponseEntity.ok("Webhook processed successfully");

@@ -52,7 +52,7 @@ public class PlaidStatementService {
         }
     }
 
-    public List<StatementFile> fetchStatements(List<StatementsAccount> accounts,String accessToken) throws IOException {
+    public List<StatementFile> fetchStatements(List<StatementsAccount> accounts,String accessToken, String repId) throws IOException {
         List<StatementFile> statementFiles = new ArrayList<>();
 
         for (StatementsAccount account : accounts) {
@@ -68,7 +68,8 @@ public class PlaidStatementService {
                 if(downloadResposne.isSuccessful()) {
                     byte[] bytes = downloadResposne.body().bytes();
                     String key = String.format(
-                            "reps/accounts/%s/statements/%s_%s.pdf",
+                            "reps/%s/accounts/%s/statements/%s_%s.pdf",
+                            repId,
                             account.getAccountId(),
                             LocalDate.now(),
                             UUID.randomUUID()
@@ -83,14 +84,14 @@ public class PlaidStatementService {
     public void uploadStatements(PlaidItem plaidItem) {
 
         String accessToken = plaidItem.getAccessToken();
-
+        String repId = plaidItem.getRepId();
         try {
             StatementsListRequest statementsRequest = new StatementsListRequest().accessToken(accessToken);
             Response<StatementsListResponse> response = plaidService.getPlaidApi()
                     .statementsList(statementsRequest)
                     .execute();
             List<StatementsAccount> accounts = response.body().getAccounts();
-            List<StatementFile> statementFiles = fetchStatements(accounts, accessToken);
+            List<StatementFile> statementFiles = fetchStatements(accounts, accessToken, repId);
 
             statementFiles.parallelStream().forEach(statementFile -> {
                 try{

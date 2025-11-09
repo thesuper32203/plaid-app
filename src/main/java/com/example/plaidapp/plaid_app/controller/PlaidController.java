@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -23,10 +24,11 @@ public class PlaidController {
         this.plaidLinkToken = plaidLinkToken;
     }
 
-    @GetMapping("/")
-    public ResponseEntity<?> home() {
+    @GetMapping("/wiseadvances/start-plaid")
+    public ResponseEntity<?> startPlaid(@RequestParam String repId) {
         try {
-            LinkTokenCreateResponse response = plaidLinkToken.createLinkToken();
+
+            LinkTokenCreateResponse response = plaidLinkToken.createLinkToken(repId);
             String hostedLinkUrl = response.getHostedLinkUrl();
 
             // Redirect user to the Plaid-hosted link page
