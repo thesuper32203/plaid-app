@@ -16,5 +16,6 @@ public class PlaidItem {
 
     private String itemId;
     private String accessToken;
+    private String userId;
 
 }
