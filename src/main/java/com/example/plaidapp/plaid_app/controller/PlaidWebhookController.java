@@ -46,7 +46,6 @@ public class PlaidWebhookController {
     public ResponseEntity<Void> handleWebhook(HttpServletRequest req,
                                               @RequestHeader(value = "plaid-verification", required = false) String plaidVerification) {
         try{
-
             byte[] bodyBytes = req.getInputStream().readAllBytes();
 
             if(plaidVerification == null || verifier.verify(plaidVerification, bodyBytes)) {
