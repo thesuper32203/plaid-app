@@ -62,7 +62,8 @@ public class PlaidLinkToken {
                 .language("en")
                 .accountFilters(accountFilters)
                 .hostedLink(new LinkTokenCreateHostedLink())
-                .webhook("https://transmaterial-frederic-nonbeatific.ngrok-free.dev/plaid/webhook");
+                .webhook("https://transmaterial-frederic-nonbeatific.ngrok-free.dev/plaid/webhook")
+                .redirectUri("https://www.wiseadvances.com");
 
         Response<LinkTokenCreateResponse> response = plaidApi.linkTokenCreate(request).execute();
 
@@ -80,7 +81,7 @@ public class PlaidLinkToken {
                 .build();
 
         plaidItemRepository.save(plaidItem);
-        System.out.printf("✅ Created link session for rep %s with userId %s%n", repId, userId);
+        System.out.printf("Created link session for rep %s with userId %s%n", repId, userId);
 
         return linkResponse;
     }

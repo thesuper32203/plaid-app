@@ -21,7 +21,7 @@ public class S3TestService {
     private final S3Client s3Client;
 
     public S3TestService(S3Client s3Client) {
-        System.out.println("✅ S3TestService bean created");
+        System.out.println("S3TestService bean created");
         this.s3Client = s3Client;
     }
 
@@ -34,7 +34,7 @@ public class S3TestService {
                     System.out.println("🪣 Bucket: " + bucket.name())
             );
         }catch (Exception e) {
-            System.err.println("❌ Failed to connect to AWS S3: " + e.getMessage());
+            System.err.println("Failed to connect to AWS S3: " + e.getMessage());
             e.printStackTrace();
         }
     }

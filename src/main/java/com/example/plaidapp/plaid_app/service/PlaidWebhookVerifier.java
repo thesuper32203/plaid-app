@@ -24,6 +24,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
 public class PlaidWebhookVerifier {
@@ -41,10 +43,13 @@ public class PlaidWebhookVerifier {
     public boolean verify(String jwtFromHeader, byte[] rawBodyBytes) {
         try {
             // 1) Parse JWT header (no verification yet)
+            Logger.getLogger(PlaidWebhookVerifier.class.getName()).log(Level.INFO, "Verifying plaid webhook");
             SignedJWT signed = SignedJWT.parse(jwtFromHeader);
             JWSHeader header = signed.getHeader();
+            Logger.getLogger(PlaidWebhookVerifier.class.getName()).log(Level.INFO, "Signed and got header: " + header);
 
             if (!"ES256".equals(header.getAlgorithm().getName())) {
+                Logger.getLogger(PlaidWebhookVerifier.class.getName()).log(Level.SEVERE, "Invalid JWS header");
                 return false; // Plaid requires ES256
             }
             String kid = header.getKeyID();
@@ -52,21 +57,31 @@ public class PlaidWebhookVerifier {
             // 2) Get JWK (cache by kid)
             JWK jwk = keyCache.get(kid, this::fetchJwk);
 
-            if (jwk == null || !(jwk instanceof ECKey ecKey)) return false;
+            if (jwk == null || !(jwk instanceof ECKey ecKey)) {
+                Logger.getLogger(PlaidWebhookVerifier.class.getName()).log(Level.SEVERE, "Invalid JWK");
+                return false;
+            }
 
             // 3) Verify signature and iat (<= 5 minutes old)
             JWSVerifier verifier = new ECDSAVerifier(ecKey);
-            if (!signed.verify(verifier)) return false;
+            if (!signed.verify(verifier)) {
+                Logger.getLogger(PlaidWebhookVerifier.class.getName()).log(Level.SEVERE, "Could not verify signature");
+                return false;
+            }
 
             JWTClaimsSet claims = signed.getJWTClaimsSet();
             Date issuedAt = claims.getIssueTime();
             if (issuedAt == null || Instant.now().isAfter(issuedAt.toInstant().plus(Duration.ofMinutes(5)))) {
+                Logger.getLogger(PlaidWebhookVerifier.class.getName()).log(Level.SEVERE, "Too Old");
                 return false; // too old
             }
 
             // 4) Compare body hash
             String claimedHash = claims.getStringClaim("request_body_sha256");
-            if (claimedHash == null) return false;
+            if (claimedHash == null) {
+                Logger.getLogger(PlaidWebhookVerifier.class.getName()).log(Level.SEVERE, "Claimed hash is null");
+                return false;
+            }
 
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
             String actualHash = Base64.getUrlEncoder().withoutPadding()
@@ -87,7 +102,10 @@ public class PlaidWebhookVerifier {
             retrofit2.Response<WebhookVerificationKeyGetResponse> resp =
                     plaidApi.webhookVerificationKeyGet(req).execute();
 
-            if (!resp.isSuccessful() || resp.body() == null) return null;
+            if (!resp.isSuccessful() || resp.body() == null) {
+                Logger.getLogger(PlaidWebhookVerifier.class.getName()).log(Level.SEVERE, "Failed to retrieve JWK");
+                return null;
+            }
             var key = resp.body().getKey(); // Plaid JWK fields
             // Build Nimbus JWK
             return new ECKey.Builder(Curve.P_256,

@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/plaid/webhook")
@@ -42,21 +44,22 @@ public class PlaidWebhookController {
 
     @PostMapping
     public ResponseEntity<Void> handleWebhook(HttpServletRequest req,
-                                              @RequestHeader(value = "Plaid-verification", required = false) String plaidVerification) {
+                                              @RequestHeader(value = "plaid-verification", required = false) String plaidVerification) {
         try{
 
             byte[] bodyBytes = req.getInputStream().readAllBytes();
 
-            if(plaidVerification != null || verifier.verify(plaidVerification, bodyBytes)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            if(plaidVerification == null || verifier.verify(plaidVerification, bodyBytes)) {
+                Logger.getLogger(PlaidWebhookController.class.getName()).log(Level.SEVERE, "Plaid verification FAIL");
+                return ResponseEntity.status(401).build();
             }
-
+            Logger.getLogger(PlaidWebhookController.class.getName()).log(Level.INFO, "Plaid verification verified");
             // Safe to parse now
 
-
+            return ResponseEntity.status(200).build();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+
     }
 }

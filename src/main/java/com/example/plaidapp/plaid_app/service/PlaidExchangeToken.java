@@ -28,7 +28,7 @@ public class PlaidExchangeToken {
                 throw new RuntimeException("No PlaidItem found for linkToken: " + linkToken);
             }
             if(item.getAccessToken() != null){
-                System.out.println("⚠️ Access token already stored, skipping duplicate exchange.");
+                System.out.println("Access token already stored, skipping duplicate exchange.");
                 return item;
             }
 
@@ -52,7 +52,7 @@ public class PlaidExchangeToken {
             item.setItemId(itemId);
             // Save the updated item (repId and userId are already there!)
             item = plaidItemRepository.save(item);
-            System.out.printf("✅ Exchanged public token for item %s (user %s, rep %s)%n",
+            System.out.printf("Exchanged public token for item %s (user %s, rep %s)%n",
                     itemId, item.getUserId(), item.getRepId());
             return item;
         } catch (Exception e) {
