@@ -28,19 +28,17 @@ public class PlaidWebhookController {
     private final PlaidStatementService plaidStatementService;
 
     private final PlaidWebhookVerifier verifier;
-    private final ObjectMapper mapper;
     private final ObjectMapper objectMapper;
 
     //private final WebhookJobPublisher publisher; // your async queue/worker
 
 
     public PlaidWebhookController(PlaidExchangeToken plaidExchangeToken, PlaidItemRepository plaidItemRepository,
-                                  PlaidStatementService plaidStatementService, PlaidWebhookVerifier verifier, ObjectMapper mapper, ObjectMapper objectMapper) {
+                                  PlaidStatementService plaidStatementService, PlaidWebhookVerifier verifier, ObjectMapper objectMapper) {
         this.plaidExchangeToken = plaidExchangeToken;
         this.plaidItemRepository = plaidItemRepository;
         this.plaidStatementService = plaidStatementService;
         this.verifier = verifier;
-        this.mapper = mapper;
         //this.publisher = publisher;
         this.objectMapper = objectMapper;
     }
