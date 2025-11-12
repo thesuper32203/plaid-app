@@ -16,6 +16,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.plaid.client.model.WebhookVerificationKeyGetRequest;
 import com.plaid.client.model.WebhookVerificationKeyGetResponse;
 import com.plaid.client.request.PlaidApi;
+import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -24,6 +25,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 
+@Service
 public class PlaidWebhookVerifier {
 
     private final PlaidApi plaidApi;

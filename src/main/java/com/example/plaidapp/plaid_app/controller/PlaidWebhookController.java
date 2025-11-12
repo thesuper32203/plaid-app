@@ -5,13 +5,13 @@ import com.example.plaidapp.plaid_app.model.PlaidItem;
 import com.example.plaidapp.plaid_app.repository.PlaidItemRepository;
 import com.example.plaidapp.plaid_app.service.PlaidExchangeToken;
 import com.example.plaidapp.plaid_app.service.PlaidStatementService;
+import com.example.plaidapp.plaid_app.service.PlaidWebhookVerifier;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plaid.client.model.StatementsAccount;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -24,42 +24,39 @@ public class PlaidWebhookController {
     private final PlaidItemRepository plaidItemRepository;
     private final PlaidStatementService plaidStatementService;
 
-    public PlaidWebhookController(PlaidExchangeToken plaidExchangeToken, PlaidItemRepository plaidItemRepository, PlaidStatementService plaidStatementService) {
+    private final PlaidWebhookVerifier verifier;
+    private final ObjectMapper mapper;
+
+    //private final WebhookJobPublisher publisher; // your async queue/worker
+
+
+    public PlaidWebhookController(PlaidExchangeToken plaidExchangeToken, PlaidItemRepository plaidItemRepository,
+                                  PlaidStatementService plaidStatementService, PlaidWebhookVerifier verifier, ObjectMapper mapper ) {
         this.plaidExchangeToken = plaidExchangeToken;
         this.plaidItemRepository = plaidItemRepository;
         this.plaidStatementService = plaidStatementService;
+        this.verifier = verifier;
+        this.mapper = mapper;
+        //this.publisher = publisher;
     }
 
     @PostMapping
-    public ResponseEntity<?> handleWebhook(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Void> handleWebhook(HttpServletRequest req,
+                                              @RequestHeader(value = "Plaid-verification", required = false) String plaidVerification) {
         try{
 
-            String webhookType = (String) payload.get("webhook_type");
-            String webhookCode = (String) payload.get("webhook_code");
+            byte[] bodyBytes = req.getInputStream().readAllBytes();
 
-            if ("LINK".equalsIgnoreCase(webhookType) &&
-                    ("ITEM_ADD_RESULT".equalsIgnoreCase(webhookCode) ||
-                            "SESSION_FINISHED".equalsIgnoreCase(webhookCode))) {
-
-
-                String publicToken = (String) payload.get("public_token");
-                String linkToken = (String) payload.get("link_token");
-
-                System.out.println("linktoken: " + linkToken);
-
-                if (publicToken == null) {
-                    return ResponseEntity.badRequest().body("Missing public_token in webhook");
-                }
-
-                PlaidItem item = plaidExchangeToken.exchangeToken(publicToken, linkToken);
-                plaidStatementService.uploadStatements(item);
-
+            if(plaidVerification != null || verifier.verify(plaidVerification, bodyBytes)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
-            return ResponseEntity.ok("Webhook processed successfully");
 
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error handling webhook: " + e.getMessage());
+            // Safe to parse now
+
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 }
