@@ -26,6 +26,13 @@ public class PlaidLinkToken {
 
     public LinkTokenCreateResponse createLinkToken(String repId) throws IOException {
 
+        PlaidItem existing = plaidItemRepository.findByRepIdAndAccessTokenIsNull(repId);
+        if (existing != null) {
+            // reuse existing link token instead of creating a new one
+            LinkTokenCreateResponse response = new LinkTokenCreateResponse();
+            response.setLinkToken(existing.getLinkToken());
+            return response;
+        }
         // Generate unique userId for this session
         String userId = UUID.randomUUID().toString();
         String clientUserId = repId + ":" + userId;

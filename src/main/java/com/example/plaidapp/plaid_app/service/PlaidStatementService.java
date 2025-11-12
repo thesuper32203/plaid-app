@@ -29,11 +29,13 @@ public class PlaidStatementService {
     private final PlaidService plaidService;
     private final PlaidItemRepository plaidItemRepository;
     private final S3Client s3Client;
+    private final S3TestService s3Presigner;
 
-    public PlaidStatementService(PlaidService plaidService, PlaidItemRepository plaidItemRepository, S3Client s3Client ) {
+    public PlaidStatementService(PlaidService plaidService, PlaidItemRepository plaidItemRepository, S3Client s3Client, S3TestService s3Presigner ) {
         this.plaidService = plaidService;
         this.plaidItemRepository = plaidItemRepository;
         this.s3Client = s3Client;
+        this.s3Presigner = s3Presigner;
     }
 
     public List<StatementsAccount> getAccounts(String itemId) {
@@ -75,6 +77,8 @@ public class PlaidStatementService {
                             UUID.randomUUID()
                     );
                     statementFiles.add(new StatementFile(key, bytes));
+                    //String url = s3Presigner.createPresignedGetUrl("plaid-bank-statements",key);
+
                 }
             }
         }

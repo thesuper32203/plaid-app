@@ -27,6 +27,10 @@ public class PlaidExchangeToken {
             if(item == null) {
                 throw new RuntimeException("No PlaidItem found for linkToken: " + linkToken);
             }
+            if(item.getAccessToken() != null){
+                System.out.println("⚠️ Access token already stored, skipping duplicate exchange.");
+                return item;
+            }
 
             //Exchange public access token for  access token
             ItemPublicTokenExchangeRequest request = new ItemPublicTokenExchangeRequest()

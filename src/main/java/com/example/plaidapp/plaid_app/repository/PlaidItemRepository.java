@@ -11,4 +11,6 @@ public interface PlaidItemRepository extends JpaRepository<PlaidItem, Long> {
     PlaidItem findByItemId(String itemId);
 
     PlaidItem findByLinkToken(String linkToken);
+
+    PlaidItem findByRepIdAndAccessTokenIsNull(String repId);
 }
