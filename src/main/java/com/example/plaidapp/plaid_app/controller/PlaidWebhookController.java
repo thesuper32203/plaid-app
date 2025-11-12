@@ -3,6 +3,7 @@ package com.example.plaidapp.plaid_app.controller;
 
 import com.example.plaidapp.plaid_app.model.PlaidItem;
 import com.example.plaidapp.plaid_app.repository.PlaidItemRepository;
+import com.example.plaidapp.plaid_app.repository.PlaidWebhookDTO;
 import com.example.plaidapp.plaid_app.service.PlaidExchangeToken;
 import com.example.plaidapp.plaid_app.service.PlaidStatementService;
 import com.example.plaidapp.plaid_app.service.PlaidWebhookVerifier;
@@ -28,18 +29,20 @@ public class PlaidWebhookController {
 
     private final PlaidWebhookVerifier verifier;
     private final ObjectMapper mapper;
+    private final ObjectMapper objectMapper;
 
     //private final WebhookJobPublisher publisher; // your async queue/worker
 
 
     public PlaidWebhookController(PlaidExchangeToken plaidExchangeToken, PlaidItemRepository plaidItemRepository,
-                                  PlaidStatementService plaidStatementService, PlaidWebhookVerifier verifier, ObjectMapper mapper ) {
+                                  PlaidStatementService plaidStatementService, PlaidWebhookVerifier verifier, ObjectMapper mapper, ObjectMapper objectMapper) {
         this.plaidExchangeToken = plaidExchangeToken;
         this.plaidItemRepository = plaidItemRepository;
         this.plaidStatementService = plaidStatementService;
         this.verifier = verifier;
         this.mapper = mapper;
         //this.publisher = publisher;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping
@@ -54,6 +57,7 @@ public class PlaidWebhookController {
             }
             Logger.getLogger(PlaidWebhookController.class.getName()).log(Level.INFO, "Plaid verification verified");
             // Safe to parse now
+            PlaidWebhookDTO dto = objectMapper.readValue(bodyBytes, PlaidWebhookDTO.class);
 
             return ResponseEntity.status(200).build();
         } catch (Exception e) {
