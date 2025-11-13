@@ -59,7 +59,7 @@ public class WebhookJobPublisher {
 
                     if (item != null && item.getAccessToken() != null) {
                         LOGGER.log(Level.INFO, "Starting statement upload for item: " + item.getItemId());
-                        plaidStatementService.uploadStatements(item);
+                        plaidStatementService.uploadStatementsAndNotify(item);
                     } else {
                         LOGGER.log(Level.WARNING, "Cannot upload statements - item or access token not found");
                     }
