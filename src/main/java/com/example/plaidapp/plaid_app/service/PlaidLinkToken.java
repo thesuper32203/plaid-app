@@ -12,27 +12,22 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
 public class PlaidLinkToken {
 
+    private static final Logger LOGGER = Logger.getLogger(PlaidLinkToken.class.getName());
     private final PlaidApi plaidApi;
     private final PlaidItemRepository plaidItemRepository;
 
-    public PlaidLinkToken(PlaidService plaidService, PlaidItemRepository PlaidItemRepository ) {
+    public PlaidLinkToken(PlaidService plaidService, PlaidItemRepository plaidItemRepository) {
         this.plaidApi = plaidService.getPlaidApi();
-        this.plaidItemRepository = PlaidItemRepository;
+        this.plaidItemRepository = plaidItemRepository;
     }
 
     public LinkTokenCreateResponse createLinkToken(String repId) throws IOException {
-
-        PlaidItem existing = plaidItemRepository.findByRepIdAndAccessTokenIsNull(repId);
-        if (existing != null) {
-            // reuse existing link token instead of creating a new one
-            LinkTokenCreateResponse response = new LinkTokenCreateResponse();
-            response.setLinkToken(existing.getLinkToken());
-            return response;
-        }
         // Generate unique userId for this session
         String userId = UUID.randomUUID().toString();
         String clientUserId = repId + ":" + userId;
@@ -40,7 +35,7 @@ public class PlaidLinkToken {
         LinkTokenCreateRequestUser user = new LinkTokenCreateRequestUser()
                 .clientUserId(clientUserId);
 
-        LinkTokenCreateRequestStatements statements =  new LinkTokenCreateRequestStatements()
+        LinkTokenCreateRequestStatements statements = new LinkTokenCreateRequestStatements()
                 .startDate(LocalDate.now().minusMonths(4))
                 .endDate(LocalDate.now());
 
@@ -69,19 +64,25 @@ public class PlaidLinkToken {
 
         if (!response.isSuccessful()) {
             String error = response.errorBody() != null ? response.errorBody().string() : "Unknown error";
+            LOGGER.log(Level.SEVERE, "Plaid API error: " + error);
             throw new IOException("Plaid API error: " + error);
         }
 
         LinkTokenCreateResponse linkResponse = response.body();
 
-        PlaidItem plaidItem = new PlaidItem().builder()
+        // Create PlaidItem with auto-generated ID (not using linkToken as PK)
+        PlaidItem plaidItem = PlaidItem.builder()
                 .linkToken(linkResponse.getLinkToken())
                 .repId(repId)
                 .userId(userId)
                 .build();
 
-        plaidItemRepository.save(plaidItem);
-        System.out.printf("Created link session for rep %s with userId %s%n", repId, userId);
+        plaidItem = plaidItemRepository.save(plaidItem);
+
+        LOGGER.log(Level.INFO, String.format(
+                "Created link session for rep %s with userId %s (PlaidItem ID: %s)",
+                repId, userId, plaidItem.getId()
+        ));
 
         return linkResponse;
     }
