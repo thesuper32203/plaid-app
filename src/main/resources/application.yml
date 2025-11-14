@@ -5,8 +5,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: asuperapplications@gmail.com
-    password: smfo ekhi lxyp husp
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -14,9 +14,9 @@ spring:
           starttls:
             enable: true
   datasource:
-    url: jdbc:postgresql://localhost:5432/plaid_app_db
-    username: postgres              # replace with your actual DB username
-    password: ${POSTGRESQL_PASSWORD}   # replace with your actual DB password
+    url: jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}
+    username: ${PGUSER}
+    password: ${PGPASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -40,5 +40,5 @@ aws:
   secret-key: ${S3_SECRET}
   region: us-east-2
   s3:
-    bucket: plaid-bank-statements
+    bucket: ${S3_BUCKET}
 
