@@ -4,6 +4,7 @@ import com.example.plaidapp.plaid_app.model.PlaidItem;
 import com.example.plaidapp.plaid_app.repository.PlaidItemRepository;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import retrofit2.Response;
 
@@ -17,7 +18,8 @@ import java.util.logging.Logger;
 
 @Service
 public class PlaidLinkToken {
-
+    @Value("${plaid.webhook-url}")
+    private String webhookUrl;
     private static final Logger LOGGER = Logger.getLogger(PlaidLinkToken.class.getName());
     private final PlaidApi plaidApi;
     private final PlaidItemRepository plaidItemRepository;
@@ -57,7 +59,7 @@ public class PlaidLinkToken {
                 .language("en")
                 .accountFilters(accountFilters)
                 .hostedLink(new LinkTokenCreateHostedLink())
-                .webhook("https://transmaterial-frederic-nonbeatific.ngrok-free.dev/plaid/webhook")
+                .webhook(webhookUrl)
                 .redirectUri("https://www.wiseadvances.com");
 
         Response<LinkTokenCreateResponse> response = plaidApi.linkTokenCreate(request).execute();
