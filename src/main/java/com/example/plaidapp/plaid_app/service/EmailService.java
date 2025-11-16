@@ -1,31 +1,60 @@
 package com.example.plaidapp.plaid_app.service;
 
 import com.example.plaidapp.plaid_app.util.StatementFile;
+import jakarta.activation.DataHandler;
+import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.util.ByteArrayDataSource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ses.SesClient;
+import software.amazon.awssdk.services.ses.model.RawMessage;
+import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
+import software.amazon.awssdk.services.ses.model.SesException;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Service
 public class EmailService {
-
     private static final Logger LOGGER = Logger.getLogger(EmailService.class.getName());
-    private final JavaMailSender mailSender;
 
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+    private final SesClient sesClient;
+    private final String fromEmail;
+
+    public EmailService(
+            @Value("${aws.access-key}") String accessKey,
+            @Value("${aws.secret-key}") String secretKey,
+            @Value("${aws.region}") String region,
+            @Value("${ses.from-email}") String fromEmail) {
+
+        this.fromEmail = fromEmail;
+
+        AwsBasicCredentials awsCreds = AwsBasicCredentials.create(accessKey, secretKey);
+
+        this.sesClient = SesClient.builder()
+                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
+                .build();
     }
 
     /**
-     * Send bank statements to a rep via email
+     * Send bank statements to a rep via email (PDF attachments) using AWS SES
      * @param recipientEmail The rep's email address
      * @param repId The rep ID
      * @param statementFiles List of statement files to attach
@@ -35,34 +64,20 @@ public class EmailService {
         try {
             LOGGER.log(Level.INFO, "Preparing to send " + statementFiles.size() + " statements to " + recipientEmail);
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            MimeMessage message = buildMimeMessageWithAttachments(recipientEmail, repId, statementFiles);
+            sendViaSes(message);
 
-            // Set email details
-            helper.setTo(recipientEmail);
-            helper.setSubject("Bank Statements Available - " + LocalDate.now());
-            helper.setText(buildEmailBody(repId, statementFiles.size()), true); // true = HTML
-
-            // Attach each statement PDF
-            for (StatementFile statementFile : statementFiles) {
-                String filename = extractFilename(statementFile.getKey());
-                ByteArrayResource resource = new ByteArrayResource(statementFile.getData());
-                helper.addAttachment(filename, resource);
-            }
-
-            // Send email
-            mailSender.send(message);
             LOGGER.log(Level.INFO, "Successfully sent " + statementFiles.size() +
                     " statements to " + recipientEmail);
 
-        } catch (MessagingException e) {
+        } catch (MessagingException | IOException | SesException e) {
             LOGGER.log(Level.SEVERE, "Failed to send email to " + recipientEmail, e);
-            throw new RuntimeException("Failed to send bank statements email", e);
+            throw new RuntimeException("Failed to send bank statements email via SES", e);
         }
     }
 
     /**
-     * Send bank statements with S3 presigned URLs instead of attachments
+     * Send bank statements with S3 presigned URLs instead of attachments (using AWS SES)
      * (Better for large files or many statements)
      */
     @Async("webhookExecutor")
@@ -71,20 +86,97 @@ public class EmailService {
             LOGGER.log(Level.INFO, "Sending email with " + presignedUrls.size() +
                     " statement links to " + recipientEmail);
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            MimeMessage message = buildMimeMessageWithLinks(recipientEmail, repId, presignedUrls);
+            sendViaSes(message);
 
-            helper.setTo(recipientEmail);
-            helper.setSubject("Bank Statements Available - " + LocalDate.now());
-            helper.setText(buildEmailBodyWithLinks(repId, presignedUrls), true);
-
-            mailSender.send(message);
             LOGGER.log(Level.INFO, "Successfully sent statement links to " + recipientEmail);
 
-        } catch (MessagingException e) {
+        } catch (MessagingException | IOException | SesException e) {
             LOGGER.log(Level.SEVERE, "Failed to send email to " + recipientEmail, e);
-            throw new RuntimeException("Failed to send bank statements email", e);
+            throw new RuntimeException("Failed to send bank statements email via SES", e);
         }
+    }
+
+    // ---------- Internal helpers ----------
+
+    private MimeMessage buildMimeMessageWithAttachments(
+            String recipientEmail,
+            String repId,
+            List<StatementFile> statementFiles
+    ) throws MessagingException {
+
+        Session session = Session.getInstance(new Properties());
+        MimeMessage message = new MimeMessage(session);
+
+        message.setFrom(new InternetAddress(fromEmail));
+        message.setRecipient(Message.RecipientType.TO, new InternetAddress(recipientEmail));
+        message.setSubject("Bank Statements Available - " + LocalDate.now());
+
+        // multipart/mixed: HTML body + attachments
+        MimeMultipart mixed = new MimeMultipart("mixed");
+
+        // HTML body
+        MimeBodyPart bodyPart = new MimeBodyPart();
+        bodyPart.setContent(buildEmailBody(repId, statementFiles.size()), "text/html; charset=UTF-8");
+        mixed.addBodyPart(bodyPart);
+
+        // Attach each statement PDF
+        for (StatementFile statementFile : statementFiles) {
+            MimeBodyPart attachmentPart = new MimeBodyPart();
+
+            String filename = extractFilename(statementFile.getKey());
+            ByteArrayDataSource dataSource =
+                    new ByteArrayDataSource(statementFile.getData(), "application/pdf");
+
+            attachmentPart.setDataHandler(new DataHandler(dataSource));
+            attachmentPart.setFileName(filename);
+
+            mixed.addBodyPart(attachmentPart);
+        }
+
+        message.setContent(mixed);
+        message.saveChanges();
+        return message;
+    }
+
+    private MimeMessage buildMimeMessageWithLinks(
+            String recipientEmail,
+            String repId,
+            List<String> presignedUrls
+    ) throws MessagingException {
+
+        Session session = Session.getInstance(new Properties());
+        MimeMessage message = new MimeMessage(session);
+
+        message.setFrom(new InternetAddress(fromEmail));
+        message.setRecipient(Message.RecipientType.TO, new InternetAddress(recipientEmail));
+        message.setSubject("Bank Statements Available - " + LocalDate.now());
+
+        MimeMultipart alternative = new MimeMultipart("alternative");
+
+        MimeBodyPart htmlPart = new MimeBodyPart();
+        htmlPart.setContent(buildEmailBodyWithLinks(repId, presignedUrls), "text/html; charset=UTF-8");
+        alternative.addBodyPart(htmlPart);
+
+        message.setContent(alternative);
+        message.saveChanges();
+        return message;
+    }
+
+    private void sendViaSes(MimeMessage message) throws MessagingException, IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        message.writeTo(outputStream);
+        byte[] bytes = outputStream.toByteArray();
+
+        RawMessage rawMessage = RawMessage.builder()
+                .data(SdkBytes.fromByteArray(bytes))
+                .build();
+
+        SendRawEmailRequest request = SendRawEmailRequest.builder()
+                .rawMessage(rawMessage)
+                .build();
+
+        sesClient.sendRawEmail(request);
     }
 
     private String buildEmailBody(String repId, int statementCount) {
@@ -173,7 +265,6 @@ public class EmailService {
     }
 
     private String extractFilename(String s3Key) {
-        // Extract just the filename from the S3 key path
         String[] parts = s3Key.split("/");
         return parts[parts.length - 1];
     }
