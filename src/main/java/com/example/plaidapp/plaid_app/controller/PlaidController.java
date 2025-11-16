@@ -28,6 +28,10 @@ public class PlaidController {
     public ResponseEntity<?> startPlaid(@RequestParam String repId) {
         try {
 
+            if (!repId.matches("^[a-zA-Z0-9_-]+$")) {
+                return ResponseEntity.badRequest().body("Invalid rep ID format");
+            }
+
             LinkTokenCreateResponse response = plaidLinkToken.createLinkToken(repId);
             String hostedLinkUrl = response.getHostedLinkUrl();
 
