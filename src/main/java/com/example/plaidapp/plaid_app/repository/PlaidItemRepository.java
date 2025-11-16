@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface PlaidItemRepository extends JpaRepository<PlaidItem, Long> {
+public interface PlaidItemRepository extends JpaRepository<PlaidItem, String> {
     boolean existsByItemIdAndUserId(String itemId, String userId);
 
     PlaidItem findByItemId(String itemId);
