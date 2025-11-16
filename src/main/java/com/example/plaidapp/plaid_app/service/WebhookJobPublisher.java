@@ -3,7 +3,6 @@ package com.example.plaidapp.plaid_app.service;
 import com.example.plaidapp.plaid_app.model.PlaidItem;
 import com.example.plaidapp.plaid_app.model.PlaidWebhookDTO;
 import com.example.plaidapp.plaid_app.repository.PlaidItemRepository;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.logging.Level;
@@ -13,10 +12,10 @@ import java.util.logging.Logger;
 public class WebhookJobPublisher {
 
     private static final Logger LOGGER = Logger.getLogger(WebhookJobPublisher.class.getName());
-
     private final PlaidExchangeToken plaidExchangeToken;
     private final PlaidStatementService plaidStatementService;
     private final PlaidItemRepository plaidItemRepository;
+
 
     public WebhookJobPublisher(PlaidExchangeToken plaidExchangeToken,
                                PlaidStatementService plaidStatementService,
@@ -26,8 +25,9 @@ public class WebhookJobPublisher {
         this.plaidItemRepository = plaidItemRepository;
     }
 
-    @Async
+
     public void publish(PlaidWebhookDTO dto) {
+
         try {
             LOGGER.log(Level.INFO, "Processing webhook: " + dto.getWebhook_type() + " / " + dto.getWebhook_code());
 

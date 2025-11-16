@@ -4,6 +4,8 @@ package com.example.plaidapp.plaid_app.controller;
 import com.example.plaidapp.plaid_app.service.PlaidLinkToken;
 import com.example.plaidapp.plaid_app.service.PlaidService;
 import com.plaid.client.model.LinkTokenCreateResponse;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +27,7 @@ public class PlaidController {
     }
 
     @GetMapping("/wiseadvances/start-plaid")
-    public ResponseEntity<?> startPlaid(@RequestParam String repId) {
+    public ResponseEntity<?> startPlaid(@RequestParam @NotBlank @Size(max = 100) String repId) {
         try {
 
             if (!repId.matches("^[a-zA-Z0-9_-]+$")) {

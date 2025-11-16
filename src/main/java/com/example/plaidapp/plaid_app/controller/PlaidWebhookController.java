@@ -72,9 +72,13 @@ public class PlaidWebhookController {
 
             // Parse the webhook payload
             PlaidWebhookDTO dto = objectMapper.readValue(bodyBytes, PlaidWebhookDTO.class);
-
+            if (dto.getWebhook_type() == null || dto.getWebhook_code() == null) {
+                Logger.getLogger(PlaidWebhookController.class.getName()).log(Level.SEVERE, "Missing required webhook fields");
+                return ResponseEntity.status(400).build();
+            }
             // Publish to async queue for processing
             publisher.publish(dto);
+            // Validate required fields
 
             return ResponseEntity.ok().build();
 

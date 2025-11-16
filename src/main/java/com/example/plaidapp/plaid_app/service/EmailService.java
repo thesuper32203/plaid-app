@@ -6,6 +6,7 @@ import jakarta.mail.internet.MimeMessage;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -29,6 +30,7 @@ public class EmailService {
      * @param repId The rep ID
      * @param statementFiles List of statement files to attach
      */
+    @Async("webhookExecutor")
     public void sendBankStatements(String recipientEmail, String repId, List<StatementFile> statementFiles) {
         try {
             LOGGER.log(Level.INFO, "Preparing to send " + statementFiles.size() + " statements to " + recipientEmail);
@@ -63,6 +65,7 @@ public class EmailService {
      * Send bank statements with S3 presigned URLs instead of attachments
      * (Better for large files or many statements)
      */
+    @Async("webhookExecutor")
     public void sendBankStatementsWithLinks(String recipientEmail, String repId, List<String> presignedUrls) {
         try {
             LOGGER.log(Level.INFO, "Sending email with " + presignedUrls.size() +
